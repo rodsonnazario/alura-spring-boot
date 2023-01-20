@@ -6,12 +6,14 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import br.com.alura.forum.controller.dto.DetalhesDoTopicoDto;
 import br.com.alura.forum.controller.dto.TopicoDto;
 import br.com.alura.forum.controller.form.TopicoForm;
 import br.com.alura.forum.modelo.Topico;
@@ -36,6 +38,14 @@ public class TopicosController {
 		} else {
 			return TopicoDto.converter(topicoRepository.findByCursoNome(nomeCurso));
 		}
+	}
+	
+	@GetMapping("/{id}")
+	public DetalhesDoTopicoDto detalhar(@PathVariable Long id) {
+		return topicoRepository
+				.findById(id)
+				.map(topico -> new DetalhesDoTopicoDto(topico))
+				.orElseThrow();		
 	}
 	
 	@PostMapping
