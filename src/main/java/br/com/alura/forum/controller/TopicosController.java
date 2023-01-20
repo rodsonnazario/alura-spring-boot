@@ -2,6 +2,7 @@ package br.com.alura.forum.controller;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -36,19 +37,18 @@ public class TopicosController {
 
 	@GetMapping
 	public List<TopicoDto> lista(String nomeCurso) {
-		if(nomeCurso == null) {
-			return TopicoDto.converter(topicoRepository.findAll());			
-		} else {
-			return TopicoDto.converter(topicoRepository.findByCursoNome(nomeCurso));
-		}
+		return TopicoDto.converter(
+				Optional.ofNullable(nomeCurso)
+				.map(topicoRepository::findByCursoNome)
+				.orElseGet(topicoRepository::findAll));
 	}
 	
 	@GetMapping("/{id}")
-	public DetalhesDoTopicoDto detalhar(@PathVariable Long id) {
+	public ResponseEntity<DetalhesDoTopicoDto> detalhar(@PathVariable Long id) {
 		return topicoRepository
 				.findById(id)
-				.map(topico -> new DetalhesDoTopicoDto(topico))
-				.orElseThrow();		
+				.map(topico -> ResponseEntity.ok(new DetalhesDoTopicoDto(topico)))
+				.orElse(ResponseEntity.notFound().build());		
 	}
 	
 	@PostMapping
@@ -63,15 +63,23 @@ public class TopicosController {
 	}
 	
 	@PutMapping("/{id}")
-	public ResponseEntity<TopicoDto> atualizar(@PathVariable Long id, @RequestBody @Valid AtualizacaoTopicoForm form, UriComponentsBuilder uriBuilder) {
-		Topico topico = form.atualizar(id, topicoRepository);	
-		topicoRepository.save(topico);
-		return ResponseEntity.ok(new TopicoDto(topico));
+	public ResponseEntity<TopicoDto> atualizar(@PathVariable Long id, @RequestBody @Valid AtualizacaoTopicoForm form) {
+		return topicoRepository
+				.findById(id)
+				.map(topico -> form.atualizar(id, topicoRepository))
+				.map(topicoRepository::save)
+				.map(topico -> ResponseEntity.ok(new TopicoDto(topico)))
+				.orElse(ResponseEntity.notFound().build());
 	}
 	
 	@DeleteMapping("/{id}")
 	public ResponseEntity<?> remover(@PathVariable Long id) {
-		topicoRepository.deleteById(id);
-		return ResponseEntity.ok().build();
+		return topicoRepository
+				.findById(id)
+				.map(topico -> {
+					topicoRepository.deleteById(id);
+					return ResponseEntity.ok().build();
+				})
+				.orElse(ResponseEntity.notFound().build());	
 	}
 }
